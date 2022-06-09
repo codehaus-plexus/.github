@@ -27,7 +27,7 @@ Excludes from build matrix:
         [ 
           {"jdk": "8"},   # exclude jdk 8 from all builds
           {"os": "windows-latest"}, # exclude windows from all builds
-          {"jdk": "8", "os": "windows-latest"} # exclude jkd 8 on windows
+          {"jdk": "8", "os": "windows-latest"} # exclude jdk 8 on windows
         ]
 ```
 
