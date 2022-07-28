@@ -35,7 +35,7 @@ on:
       jdk-matrix:
         description: 'jdk matrix as json array'
         required: false
-        default: '[ "8", "11", "17" ]'
+        default: '[ "8", "11", "17", "18", "19-ea" ]'
         type: string
 
       matrix-exclude:
@@ -47,7 +47,7 @@ on:
       jdk-distribution-matrix:
         description: "jdk distribution matrix"
         required: false
-        default: '[ "temurin" ]'
+        default: '[ "zulu" ]'
         type: string
         
       jdk-fast-fail-build:
@@ -70,7 +70,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           java-version: ${{ inputs.jdk-fast-fail-build }}
-          distribution: 'temurin'
+          distribution: 'zulu'
           cache: 'maven'
 
       - name: Build with Maven
