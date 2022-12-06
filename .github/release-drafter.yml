@@ -37,6 +37,7 @@ categories:
   - title: 📦 Dependency updates
     label: 
       - dependencies
+      - dependency
       - dependency-upgrade
   - title: 📝 Documentation updates
     label: documentation
