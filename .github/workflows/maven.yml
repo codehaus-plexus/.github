@@ -53,7 +53,7 @@ on:
       jdk-fast-fail-build:
         description: "jdk fast fail build"
         required: false
-        default: '8'
+        default: '17'
         type: string        
 
 jobs:
