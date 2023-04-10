@@ -47,7 +47,7 @@ on:
       jdk-distribution-matrix:
         description: "jdk distribution matrix"
         required: false
-        default: '[ "zulu" ]'
+        default: '[ "temurin" ]'
         type: string
         
       jdk-fast-fail-build:
@@ -70,7 +70,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           java-version: ${{ inputs.jdk-fast-fail-build }}
-          distribution: 'zulu'
+          distribution: 'temurin'
           cache: 'maven'
 
       - name: Build with Maven
