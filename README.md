@@ -31,6 +31,18 @@ Excludes from build matrix:
         ]
 ```
 
+Includes to build matrix:
+
+```yaml
+...
+    uses: codehaus-plexus/.github/.github/workflows/maven.yml@master (or tag)
+    with:
+      matrix-include: >
+        [ 
+          {"jdk": "21", "os": "linux-latest", distribution: "corretto" } # include AWS Corretto Java 21 on linux
+        ]
+```
+
 # Usage release-drafter
 
 To have the github release filled with Pull request content
