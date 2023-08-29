@@ -44,6 +44,12 @@ on:
         default: '[]'
         type: string
 
+      matrix-include:
+        description: 'include for matrix as json'
+        required: false
+        default: '[]'
+        type: string
+
       jdk-distribution-matrix:
         description: "jdk distribution matrix"
         required: false
@@ -95,6 +101,7 @@ jobs:
         jdk:      ${{ fromJSON( inputs.jdk-matrix ) }}
         distribution:      ${{ fromJSON( inputs.jdk-distribution-matrix ) }}
         exclude:  ${{ fromJSON( inputs.matrix-exclude ) }}
+        include:  ${{ fromJSON( inputs.matrix-include ) }}
 
     steps:
       - name: Checkout
