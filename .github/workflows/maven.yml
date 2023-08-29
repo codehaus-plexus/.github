@@ -49,12 +49,18 @@ on:
         required: false
         default: '[ "temurin" ]'
         type: string
-        
+
       jdk-fast-fail-build:
         description: "jdk fast fail build"
         required: false
         default: '17'
-        type: string        
+        type: string
+
+      jdk-distribution-fast-fail-build:
+        description: "jdk distribution fast fail build"
+        required: false
+        default: 'temurin'
+        type: string
 
 jobs:
 
@@ -70,7 +76,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           java-version: ${{ inputs.jdk-fast-fail-build }}
-          distribution: 'temurin'
+          distribution: ${{ inputs.jdk-distribution-fast-fail-build }}
           cache: 'maven'
 
       - name: Build with Maven
