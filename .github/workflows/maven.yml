@@ -88,6 +88,27 @@ jobs:
       - name: Build with Maven
         run: mvn ${{ inputs.maven_args }}
 
+  build-experimental:
+    name: Experimental Java 21 build
+    needs: build
+
+    runs-on: ubuntu-latest
+    fail-fast: false
+    continue-on-error: true
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        java-version: '21'
+        distribution: 'corretto'
+        cache: 'maven'
+
+    - name: Build with Maven
+      run: mvn ${{ inputs.maven_args }}
+
   verify:
     needs: build
     name: ${{ matrix.os }} jdk-${{ matrix.jdk }}-${{ matrix.distribution }}
