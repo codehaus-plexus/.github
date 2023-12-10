@@ -21,9 +21,15 @@ on:
   workflow_call:
     inputs:
       maven_args:
-        description: The arguments to pass to Maven when building the code
+        description: 'The arguments to pass to Maven when building the code'
         required: false
-        default: --batch-mode --errors --show-version verify javadoc:javadoc
+        default: '--batch-mode --errors --show-version verify javadoc:javadoc'
+        type: string
+
+      maven-version:
+        description: 'The Maven version used during build job'
+        required: false
+        default: '3.9.6'
         type: string
 
       os-matrix:
@@ -51,19 +57,19 @@ on:
         type: string
 
       jdk-distribution-matrix:
-        description: "jdk distribution matrix"
+        description: 'jdk distribution matrix'
         required: false
         default: '[ "temurin" ]'
         type: string
 
       jdk-fast-fail-build:
-        description: "jdk fast fail build"
+        description: 'jdk fast fail build'
         required: false
         default: '17'
         type: string
 
       jdk-distribution-fast-fail-build:
-        description: "jdk distribution fast fail build"
+        description: 'jdk distribution fast fail build'
         required: false
         default: 'temurin'
         type: string
@@ -84,8 +90,11 @@ jobs:
           distribution: ${{ inputs.jdk-distribution-fast-fail-build }}
           cache: 'maven'
 
+      - name: Set up Maven
+        run: mvn --errors --batch-mode --show-version org.apache.maven.plugins:maven-wrapper-plugin:3.2.0:wrapper "-Dtype=only-script" "-Dmaven=${{ inputs.maven-version }}"
+
       - name: Build with Maven
-        run: mvn ${{ inputs.maven_args }}
+        run: ./mvnw ${{ inputs.maven_args }}
 
   build-experimental:
     name: Experimental Java 21 build
@@ -96,18 +105,21 @@ jobs:
       fail-fast: false
     continue-on-error: true
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Set up JDK
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'corretto'
-        cache: 'maven'
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'corretto'
+          cache: 'maven'
 
-    - name: Build with Maven
-      run: mvn ${{ inputs.maven_args }}
+      - name: Set up Maven
+        run: mvn --errors --batch-mode --show-version org.apache.maven.plugins:maven-wrapper-plugin:3.2.0:wrapper "-Dtype=only-script" "-Dmaven=${{ inputs.maven-version }}"
+
+      - name: Build with Maven
+        run: ./mvnw ${{ inputs.maven_args }}
 
   verify:
     needs: build
@@ -134,6 +146,9 @@ jobs:
           distribution: ${{ matrix.distribution }}
           cache: 'maven'
 
+      - name: Set up Maven
+        run: mvn --errors --batch-mode --show-version org.apache.maven.plugins:maven-wrapper-plugin:3.2.0:wrapper "-Dtype=only-script" "-Dmaven=${{ inputs.maven-version }}"
+
       - name: Build with Maven
-        run: mvn ${{ inputs.maven_args }}
+        run: ./mvnw ${{ inputs.maven_args }}
 
