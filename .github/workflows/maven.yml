@@ -32,6 +32,12 @@ on:
         default: '3.9.6'
         type: string
 
+      maven-future-version:
+        description: 'The future 4.x Maven version used during test build job'
+        required: false
+        default: '4.0.0-alpha-8'
+        type: string
+
       os-matrix:
         description: 'os matrix as json array'
         required: false
@@ -96,8 +102,8 @@ jobs:
       - name: Build with Maven
         run: ./mvnw ${{ inputs.maven_args }}
 
-  build-experimental:
-    name: Experimental Java 21 build
+  build-mvn4:
+    name: Test build with Maven 4.x on Java 21
     needs: build
 
     runs-on: ubuntu-latest
@@ -116,7 +122,7 @@ jobs:
           cache: 'maven'
 
       - name: Set up Maven
-        run: mvn --errors --batch-mode --show-version org.apache.maven.plugins:maven-wrapper-plugin:3.2.0:wrapper "-Dtype=only-script" "-Dmaven=${{ inputs.maven-version }}"
+        run: mvn --errors --batch-mode --show-version org.apache.maven.plugins:maven-wrapper-plugin:3.2.0:wrapper "-Dtype=only-script" "-Dmaven=${{ inputs.maven-future-version }}"
 
       - name: Build with Maven
         run: ./mvnw ${{ inputs.maven_args }}
