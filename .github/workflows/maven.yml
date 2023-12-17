@@ -41,7 +41,7 @@ on:
       jdk-matrix:
         description: 'jdk matrix as json array'
         required: false
-        default: '[ "8", "11", "17" ]'
+        default: '[ "8", "11", "17", "21" ]'
         type: string
 
       matrix-exclude:
@@ -88,31 +88,6 @@ jobs:
         with:
           java-version: ${{ inputs.jdk-fast-fail-build }}
           distribution: ${{ inputs.jdk-distribution-fast-fail-build }}
-          cache: 'maven'
-
-      - name: Set up Maven
-        run: mvn --errors --batch-mode --show-version org.apache.maven.plugins:maven-wrapper-plugin:3.2.0:wrapper "-Dtype=only-script" "-Dmaven=${{ inputs.maven-version }}"
-
-      - name: Build with Maven
-        run: ./mvnw ${{ inputs.maven_args }}
-
-  build-experimental:
-    name: Experimental Java 21 build
-    needs: build
-
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-    continue-on-error: true
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'corretto'
           cache: 'maven'
 
       - name: Set up Maven
