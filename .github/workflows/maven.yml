@@ -35,13 +35,13 @@ on:
       os-matrix:
         description: 'os matrix as json array'
         required: false
-        default: '[ "ubuntu-latest", "windows-latest", "macOS-latest" ]'
+        default: '[ "ubuntu-latest", "windows-latest", "macos-latest" ]'
         type: string
 
       jdk-matrix:
         description: 'jdk matrix as json array'
         required: false
-        default: '[ "8", "11", "17", "21" ]'
+        default: '[ "8", "17", "21" ]'
         type: string
 
       matrix-exclude:
@@ -59,19 +59,19 @@ on:
       jdk-distribution-matrix:
         description: 'jdk distribution matrix'
         required: false
-        default: '[ "temurin" ]'
+        default: '[ "zulu" ]'
         type: string
 
       jdk-fast-fail-build:
         description: 'jdk fast fail build'
         required: false
-        default: '17'
+        default: '21'
         type: string
 
       jdk-distribution-fast-fail-build:
         description: 'jdk distribution fast fail build'
         required: false
-        default: 'temurin'
+        default: 'zulu'
         type: string
 
 jobs:
