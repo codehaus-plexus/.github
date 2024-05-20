@@ -24,6 +24,12 @@ on:
         default: 'temurin'
         type: string
 
+      branch-to-deploy:
+        description: 'Git branch name'
+        required: false
+        default: 'refs/heads/master'
+        type: string
+
 # allow single build
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -36,7 +42,7 @@ jobs:
     if: |
       github.event_name == 'push' && 
       github.repository_owner == 'codehaus-plexus' && 
-      github.ref == 'refs/heads/master' &&
+      github.ref == inputs.branch-to-deploy &&
       !startsWith(github.event.head_commit.message , '[maven-release-plugin] prepare release')
 
     runs-on: ubuntu-latest
