@@ -29,7 +29,7 @@ on:
       maven-version:
         description: 'The Maven version used during build job'
         required: false
-        default: '3.9.6'
+        default: '3.9.8'
         type: string
 
       os-matrix:
@@ -94,7 +94,7 @@ jobs:
           cache: 'maven'
 
       - name: Set up Maven
-        run: mvn --errors --batch-mode --show-version org.apache.maven.plugins:maven-wrapper-plugin:3.2.0:wrapper "-Dtype=only-script" "-Dmaven=${{ inputs.maven-version }}"
+        run: mvn --errors --batch-mode --show-version org.apache.maven.plugins:maven-wrapper-plugin:3.3.2:wrapper "-Dtype=only-script" "-Dmaven=${{ inputs.maven-version }}"
 
       - name: Build with Maven
         run: ./mvnw ${{ inputs.maven_args }}
@@ -125,7 +125,7 @@ jobs:
           cache: 'maven'
 
       - name: Set up Maven
-        run: mvn --errors --batch-mode --show-version org.apache.maven.plugins:maven-wrapper-plugin:3.2.0:wrapper "-Dtype=only-script" "-Dmaven=${{ inputs.maven-version }}"
+        run: mvn --errors --batch-mode --show-version org.apache.maven.plugins:maven-wrapper-plugin:3.3.2:wrapper "-Dtype=only-script" "-Dmaven=${{ inputs.maven-version }}"
 
       - name: Build with Maven
         run: ./mvnw ${{ inputs.maven_args }}
