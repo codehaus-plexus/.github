@@ -39,7 +39,7 @@ Includes to build matrix:
     with:
       matrix-include: >
         [ 
-          {"jdk": "21", "os": "linux-latest", distribution: "corretto" } # include AWS Corretto Java 21 on linux
+          {"jdk": "24-ea", "os": "ubuntu-latest", distribution: "temurin" } # include latest Java 24-ea on Ubuntu
         ]
 ```
 
