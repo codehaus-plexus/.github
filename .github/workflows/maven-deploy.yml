@@ -59,7 +59,7 @@ jobs:
           java-version: ${{ inputs.jdk-version }}
           distribution: ${{ inputs.jdk-distribution }}
           cache: 'maven'
-          server-id: plexus-snapshots
+          server-id: sonatype-central-portal
           server-username: MAVEN_DEPLOY_UID
           server-password: MAVEN_DEPLOY_PWD
 
@@ -67,7 +67,8 @@ jobs:
         run: mvn --errors --batch-mode --show-version org.apache.maven.plugins:maven-wrapper-plugin:3.2.0:wrapper "-Dtype=only-script" "-Dmaven=${{ inputs.maven-version }}"
 
       - name: Publish Snapshot
-        run: ./mvnw -e -B -V deploy -DskipTests
+        run: echo "deploy skipped temporally"
+#        run: ./mvnw -e -B -V deploy -DskipTests
         env:
           MAVEN_DEPLOY_UID: ${{ secrets.MAVEN_DEPLOY_UID }}
           MAVEN_DEPLOY_PWD: ${{ secrets.MAVEN_DEPLOY_PWD }}
