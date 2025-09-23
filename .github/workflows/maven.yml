@@ -41,7 +41,7 @@ on:
       jdk-matrix:
         description: 'jdk matrix as json array'
         required: false
-        default: '[ "24", "21", "8" ]'
+        default: '[ "25", "21", "8" ]'
         type: string
 
       matrix-exclude:
@@ -65,7 +65,7 @@ on:
       jdk-fast-fail-build:
         description: 'jdk fast fail build'
         required: false
-        default: '21'
+        default: '25'
         type: string
 
       jdk-distribution-fast-fail-build:
