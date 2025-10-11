@@ -80,7 +80,9 @@ jobs:
     name: fail-fast-build
     runs-on: ubuntu-latest
     # execute on any push or pull request from forked repo
-    if: github.event_name == 'push' || ( github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork )
+    if: (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork)) &&
+      !startsWith(github.event.head_commit.message , '[maven-release-plugin] prepare release')
+
 
     steps:
       - name: Checkout
