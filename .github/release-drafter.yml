@@ -9,7 +9,8 @@ categories:
     labels: 
       - breaking
   - title: 🚨 Removed
-    label: removed
+    labels:
+      - removed
   - title: ":tada: Major features and improvements"
     labels:
       - major-enhancement
@@ -18,7 +19,8 @@ categories:
     labels:
       - major-bug
   - title: ⚠️ Deprecated
-    label: deprecated
+    labels:
+      - deprecated
   - title: 🚀 New features and improvements
     labels:
       - enhancement
@@ -34,21 +36,23 @@ categories:
     labels:
       - developer 
   - title: 📝 Documentation updates
-    label: documentation
+    labels:
+      - documentation
   - title: 👻 Maintenance
     labels: 
       - chore
       - internal
       - maintenance
   - title: 🔧 Build
-    label: build           
+    labels:
+      - build
   - title: 🚦 Tests
     labels: 
       - test
       - tests
   # Default label used by Dependabot
   - title: 📦 Dependency updates
-    label:
+    labels:
       - dependencies
       - dependency
       - dependency-upgrade
