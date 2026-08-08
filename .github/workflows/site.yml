@@ -93,6 +93,11 @@ jobs:
         # The POMs set pubScmUrl from scm.developerConnection, which is an ssh URL and
         # cannot authenticate here. Rewrite it to https and let the job token supply the
         # credential, so the token stays out of the command line and the process list.
+        #
+        # Only pubScmUrl is overridden. The target branch comes from the POM: the parent
+        # sets gh-pages, and codehaus-plexus.github.io overrides it to master because an
+        # organisation page is served from there. Forcing gh-pages here would silently
+        # publish that site to a branch nobody serves.
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -105,6 +110,5 @@ jobs:
           ./mvnw ${{ inputs.maven_args }} \
             ${{ inputs.multi-module && 'site site:stage scm-publish:publish-scm' || 'site-deploy' }} \
             "-Dscmpublish.pubScmUrl=scm:git:https://github.com/${{ github.repository }}.git" \
-            "-Dscmpublish.scm.branch=gh-pages" \
             "-Dscmpublish.dryRun=${{ inputs.dry-run }}" \
             "-Dscmpublish.checkinComment=Site checkin for ${{ github.repository }}@${{ github.sha }}"
