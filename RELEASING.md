@@ -31,7 +31,13 @@ mvn release:prepare
 mvn release:perform
 ```
 
-`release:prepare` tags and bumps versions; `release:perform` builds from the tag and stages to the Central Portal. Then publish the staged deployment from the Central Portal UI.
+`release:prepare` tags and bumps versions; `release:perform` builds from the tag and deploys.
+
+There is no manual publish step. `maven-release-plugin` is configured in the parent with `<goals>deploy</goals>` and `<releaseProfiles>plexus-release</releaseProfiles>`, so `release:perform` activates the `plexus-release` profile. That profile adds GPG signing, attaches sources and a source-release assembly, and sets `njord.enabled=true`.
+
+[Njord](https://maveniverse.eu/docs/njord/) is registered as a build extension and configured with `autoPublish=true` and `publishingType=automatic`, so it publishes the deployment to Central itself. `njord.enabled` is `false` outside the release profile, so ordinary builds are unaffected.
+
+Releasing needs Maven **3.9.0** or later — the `plexus-release` profile raises `minimalMavenBuildVersion` above the 3.6.3 required for a normal build.
 
 Afterwards:
 
