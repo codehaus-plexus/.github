@@ -1,0 +1,110 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+name: Publish Site
+
+on:
+  workflow_call:
+    inputs:
+      multi-module:
+        description: 'Stage the site before publishing. Required for reactors with modules.'
+        required: false
+        default: false
+        type: boolean
+
+      dry-run:
+        description: 'Build and check out gh-pages, but do not commit or push.'
+        required: false
+        default: false
+        type: boolean
+
+      maven_args:
+        description: 'Goals and arguments used to build the site'
+        required: false
+        default: '--batch-mode --errors --show-version -Preporting clean verify'
+        type: string
+
+      maven-version:
+        description: 'The Maven version used to build the site'
+        required: false
+        default: '3.9.11'
+        type: string
+
+      jdk-version:
+        description: 'JDK used to build the site'
+        required: false
+        default: '21'
+        type: string
+
+      jdk-distribution:
+        description: 'JDK distribution used to build the site'
+        required: false
+        default: 'temurin'
+        type: string
+
+# one publish at a time: two concurrent runs would race on gh-pages
+concurrency:
+  group: publish-site-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  publish-site:
+    name: Publish Site
+
+    if: github.repository_owner == 'codehaus-plexus'
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      # maven-scm-publish-plugin commits the generated site to the gh-pages branch
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: ${{ inputs.jdk-version }}
+          distribution: ${{ inputs.jdk-distribution }}
+          cache: 'maven'
+
+      - name: Set up Maven
+        run: mvn --errors --batch-mode --show-version org.apache.maven.plugins:maven-wrapper-plugin:3.2.0:wrapper "-Dtype=only-script" "-Dmaven=${{ inputs.maven-version }}"
+
+      - name: Configure git
+        # The POMs set pubScmUrl from scm.developerConnection, which is an ssh URL and
+        # cannot authenticate here. Rewrite it to https and let the job token supply the
+        # credential, so the token stays out of the command line and the process list.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global "url.https://x-access-token:${GH_TOKEN}@github.com/.insteadOf" "https://github.com/"
+
+      - name: Publish site
+        run: |
+          ./mvnw ${{ inputs.maven_args }} \
+            ${{ inputs.multi-module && 'site site:stage scm-publish:publish-scm' || 'site-deploy' }} \
+            "-Dscmpublish.pubScmUrl=scm:git:https://github.com/${{ github.repository }}.git" \
+            "-Dscmpublish.scm.branch=gh-pages" \
+            "-Dscmpublish.dryRun=${{ inputs.dry-run }}" \
+            "-Dscmpublish.checkinComment=Site checkin for ${{ github.repository }}@${{ github.sha }}"
