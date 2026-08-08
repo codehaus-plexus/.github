@@ -1,0 +1,52 @@
+name: Bug report
+description: Something in a Plexus library behaves incorrectly
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. For a security vulnerability, please **stop** and follow
+        [SECURITY.md](https://github.com/codehaus-plexus/.github/blob/master/SECURITY.md) instead — don't file it here.
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Which version of this artifact are you using?
+      placeholder: "e.g. plexus-archiver 4.12.0"
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: JDK and Maven version
+      description: Output of `mvn -v` is ideal.
+      placeholder: "e.g. Maven 3.9.11, Temurin 21.0.5, Linux"
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead?
+      description: Include the stack trace or the relevant `mvn -e` output if there is one.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproducer
+    attributes:
+      label: How can we reproduce it?
+      description: >
+        A minimal project, a failing test, or a short code snippet. This is usually the
+        difference between an issue that gets fixed and one that stalls.
+    validations:
+      required: false
