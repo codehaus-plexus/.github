@@ -144,8 +144,14 @@ jobs:
             exit 0
           fi
 
-          git status --short | head -50
-          echo "$(git diff --cached --name-only | wc -l) file(s) changed"
+          # sed rather than head: head exits after 50 lines, which SIGPIPEs git status,
+          # and under `set -o pipefail` that aborts the whole step with exit 141
+          changed=$(git diff --cached --name-only | wc -l)
+          git status --short | sed -n '1,50p'
+          if [ "$changed" -gt 50 ]; then
+            echo "... and $((changed - 50)) more"
+          fi
+          echo "$changed file(s) changed"
 
           if [ "$DRY_RUN" = "true" ]; then
             echo "::notice::dry run - not committing or pushing"
