@@ -1,66 +1,51 @@
-# Configuration for Release Drafter: https://github.com/toolmantim/release-drafter
+# Configuration for Release Drafter: https://github.com/release-drafter/release-drafter
+# Shared by every codehaus-plexus repo via `_extends: .github`.
+#
+# Every label referenced here exists in labels.tsv, and every label in
+# labels.tsv either has a category here or is deliberately excluded.
+# Note that `categories` is an array: a repo that overrides it via _extends
+# replaces the whole array rather than appending to it.
 name-template: $NEXT_PATCH_VERSION
 tag-template: $NEXT_PATCH_VERSION
 version-template: $MAJOR.$MINOR.$PATCH
 
-# Emoji reference: https://gitmoji.carloscuesta.me/
 categories:
   - title: ":boom: Breaking changes"
-    labels: 
-      - breaking
+    labels: [breaking]
   - title: 🚨 Removed
-    labels:
-      - removed
-  - title: ":tada: Major features and improvements"
-    labels:
-      - major-enhancement
-      - major-rfe
-  - title: 🐛 Major bug fixes
-    labels:
-      - major-bug
+    labels: [removed]
   - title: ⚠️ Deprecated
-    labels:
-      - deprecated
+    labels: [deprecated]
   - title: 🚀 New features and improvements
-    labels:
-      - enhancement
-      - feature
-      - rfe
+    labels: [enhancement]
   - title: 🐛 Bug Fixes
-    labels:
-      - bug
-      - fix
-      - bugfix
-      - regression
-  - title: ":construction_worker: Changes for plugin developers"
-    labels:
-      - developer 
+    labels: [bug]
   - title: 📝 Documentation updates
-    labels:
-      - documentation
+    labels: [documentation]
   - title: 👻 Maintenance
-    labels: 
-      - chore
-      - internal
-      - maintenance
+    labels: [maintenance]
   - title: 🔧 Build
-    labels:
-      - build
-  - title: 🚦 Tests
-    labels: 
-      - test
-      - tests
-  # Default label used by Dependabot
+    labels: [build]
+  # Applied automatically by Dependabot. This is ~85% of all labelled items in
+  # the org, so it is collapsed behind a summary line rather than being allowed
+  # to bury every other category.
   - title: 📦 Dependency updates
-    labels:
-      - dependencies
-      - dependency
-      - dependency-upgrade
+    labels: [dependencies]
+    collapse-after: 10
+
 exclude-labels:
   - reverted
   - no-changelog
-  - skip-changelog
-  - invalid
+
+# Derive the next version from the labels already being applied.
+version-resolver:
+  major:
+    labels: [breaking]
+  minor:
+    labels: [enhancement, removed, deprecated]
+  patch:
+    labels: [bug, documentation, maintenance, build, dependencies]
+  default: patch
 
 change-template: '- $TITLE ([#$NUMBER]($URL)) @$AUTHOR'
 
