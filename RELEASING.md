@@ -66,15 +66,18 @@ That covers modello, plexus-compiler, plexus-languages and plexus-interactivity.
 
 The `-Preporting` profile is what adds the Javadoc, JXR and surefire reports. Without it you publish a site with no API documentation, which is worse than not republishing at all.
 
-### Known gap
+## Publishing from GitHub Actions
 
-`plexus-sec-dispatcher` has no `maven-scm-publish-plugin` configuration in its POM, so neither command above works there as written; the goal has to be invoked with `-Dscmpublish.content=target/site` by hand. This is a build bug rather than a documentation one and is tracked separately.
+Every project has a **Publish Site** workflow, run from the Actions tab. It does the same thing as the commands above, so you do not need a local checkout or credentials:
 
-## Why this isn't automated
+- **multi-module** — set by the caller workflow, not by you
+- **dry-run** — builds the site and checks out `gh-pages` without committing. Worth using the first time you publish a given project.
 
-There is no workflow that publishes sites on release. That is deliberate for now: publishing puts content live with no review step, and Maven site builds break often enough — doxia, site plugin and JDK interactions — that we would rather a person saw the output.
+The job token pushes to that repository's own `gh-pages`; there is no secret to configure.
 
-A manually-triggered (`workflow_dispatch`) workflow so that the command above becomes one button, without taking the release manager out of the loop, is the intended next step.
+### Why it isn't automatic
+
+The workflow is triggered by hand rather than on release. Publishing puts content live with no review step, and Maven site builds break often enough — doxia, site plugin and JDK interactions — that we would rather a person saw the output before it goes up.
 
 ## Snapshot deployment
 
