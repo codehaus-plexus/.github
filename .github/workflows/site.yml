@@ -32,6 +32,12 @@ on:
         default: false
         type: boolean
 
+      publish-branch:
+        description: 'Branch the built site is committed to. gh-pages for project sites; master for the organisation page.'
+        required: false
+        default: 'gh-pages'
+        type: string
+
       maven_args:
         description: 'Goals and arguments used to build the site'
         required: false
@@ -89,26 +95,63 @@ jobs:
       - name: Set up Maven
         run: mvn --errors --batch-mode --show-version org.apache.maven.plugins:maven-wrapper-plugin:3.2.0:wrapper "-Dtype=only-script" "-Dmaven=${{ inputs.maven-version }}"
 
-      - name: Configure git
-        # The POMs set pubScmUrl from scm.developerConnection, which is an ssh URL and
-        # cannot authenticate here. Rewrite it to https and let the job token supply the
-        # credential, so the token stays out of the command line and the process list.
-        #
-        # Only pubScmUrl is overridden. The target branch comes from the POM: the parent
-        # sets gh-pages, and codehaus-plexus.github.io overrides it to master because an
-        # organisation page is served from there. Forcing gh-pages here would silently
-        # publish that site to a branch nobody serves.
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --global "url.https://x-access-token:${GH_TOKEN}@github.com/.insteadOf" "https://github.com/"
+      - name: Build site
+        run: ./mvnw ${{ inputs.maven_args }} ${{ inputs.multi-module && 'site site:stage' || 'site' }}
 
       - name: Publish site
+        # maven-scm-publish-plugin is not used to do the push here. The POMs configure
+        # its pubScmUrl explicitly, which means an explicitly configured value always
+        # wins over the -Dscmpublish.pubScmUrl user property, so the ssh URL from
+        # scm.developerConnection cannot be overridden from the command line - and ssh
+        # cannot authenticate with the job token. Pushing with git directly keeps the
+        # whole step under the workflow's control.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ inputs.publish-branch }}
+          DRY_RUN: ${{ inputs.dry-run }}
+          CONTENT: ${{ inputs.multi-module && 'target/staging' || 'target/site' }}
         run: |
-          ./mvnw ${{ inputs.maven_args }} \
-            ${{ inputs.multi-module && 'site site:stage scm-publish:publish-scm' || 'site-deploy' }} \
-            "-Dscmpublish.pubScmUrl=scm:git:https://github.com/${{ github.repository }}.git" \
-            "-Dscmpublish.dryRun=${{ inputs.dry-run }}" \
-            "-Dscmpublish.checkinComment=Site checkin for ${{ github.repository }}@${{ github.sha }}"
+          set -euo pipefail
+
+          if [ ! -d "$CONTENT" ]; then
+            echo "::error::the site build produced no $CONTENT directory"
+            exit 1
+          fi
+
+          remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
+          if git ls-remote --exit-code --heads "$remote" "$BRANCH" >/dev/null 2>&1; then
+            git clone --branch "$BRANCH" --depth 1 --quiet "$remote" .site-publish
+          else
+            echo "branch $BRANCH does not exist yet; creating it"
+            git clone --depth 1 --quiet "$remote" .site-publish
+            git -C .site-publish checkout --orphan "$BRANCH"
+            git -C .site-publish rm -rq --cached . || true
+            find .site-publish -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          fi
+
+          # mirror the built site over the branch content, so pages deleted upstream
+          # also disappear from the published site
+          rsync -a --delete --exclude '.git' "$CONTENT"/ .site-publish/
+
+          cd .site-publish
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "site is unchanged; nothing to publish"
+            exit 0
+          fi
+
+          git status --short | head -50
+          echo "$(git diff --cached --name-only | wc -l) file(s) changed"
+
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "::notice::dry run - not committing or pushing"
+            exit 0
+          fi
+
+          git commit -qm "Site checkin for ${GITHUB_REPOSITORY}@${GITHUB_SHA}"
+          git push --quiet origin "$BRANCH"
+          echo "::notice::published to $BRANCH"
