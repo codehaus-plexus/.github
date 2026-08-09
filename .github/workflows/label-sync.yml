@@ -1,22 +1,20 @@
-# Keeps the org's labels matching .github/labels.tsv.
+# Keeps the org's labels matching .github/labels.js.
 #
-# This exists because the label set drifted badly once already: `maintenance`
-# ended up defined in 18 repos with 18 different colours, because there was a
-# convention and nothing enforcing it. Fixing the state without fixing the
-# process only resets the clock.
+# Structure follows apache/maven-gh-actions-shared/.github/workflows/labels-sync.yml
+# so the two orgs stay recognisably the same, with two differences:
 #
-# The weekly run is REPORT-ONLY and needs no credentials: every plexus repo is
-# public, and reading labels from a public repo requires no permissions at all,
-# so the default GITHUB_TOKEN is enough. It diffs the live labels against
-# labels.tsv and fails if they have drifted. Nothing is ever changed by the
-# schedule.
+#   * the repository list comes from the GitHub API rather than gitbox, which
+#     the ASF has and codehaus-plexus does not. Archived repositories are
+#     filtered out, so retired components are never touched.
+#   * the scheduled run is REPORT-ONLY and needs no credentials. Reading labels
+#     from a public repository requires no permissions, so drift is detected on
+#     the default GITHUB_TOKEN. Only reconciling needs a token.
 #
-# Reconciling (apply: true) does need write access, via an optional
-# LABEL_SYNC_TOKEN secret - a fine-grained PAT owned by the codehaus-plexus org
-# with `Issues: Read and write`. Only an org owner can add that secret. Until
-# one exists, the drift report still works; a maintainer with push rights can
-# reconcile by running `.github/sync-labels.sh --apply` locally, which is how
-# the current state was applied.
+# Reconciling uses an optional LABEL_SYNC_TOKEN secret - a fine-grained PAT
+# owned by the org with `Issues: Read and write`. Only an org owner can add it.
+# Until one exists the drift report still works, and anyone with push rights can
+# reconcile from a checkout by dispatching this workflow from their own fork or
+# by running the equivalent locally.
 name: Label sync
 
 on:
@@ -33,26 +31,101 @@ permissions:
   contents: read
 
 jobs:
-  sync:
+  repos:
+    name: Prepare repositories list
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.repo.outputs.matrix }}
+    steps:
+      - id: repo
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo 'matrix<<EOF'
+            gh api 'orgs/codehaus-plexus/repos?per_page=100' --paginate \
+              --jq '.[] | select(.archived == false) | .name' \
+              | sort | jq -Rsc 'split("\n") | map(select(length > 0))'
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+          cat "$GITHUB_OUTPUT"
+
+  label-sync:
+    name: ${{ matrix.repo }}
+    runs-on: ubuntu-latest
+    needs: repos
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        repo: ${{ fromJSON(needs.repos.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
-      - name: Report drift
-        if: ${{ inputs.apply != true }}
-        env:
-          # Reading labels from public repos needs no permissions.
-          GH_TOKEN: ${{ github.token }}
-        run: .github/sync-labels.sh
-
-      - name: Reconcile
+      - name: Check the token when reconciling
         if: ${{ inputs.apply == true }}
         env:
-          GH_TOKEN: ${{ secrets.LABEL_SYNC_TOKEN }}
+          TOKEN: ${{ secrets.LABEL_SYNC_TOKEN }}
         run: |
-          if [ -z "$GH_TOKEN" ]; then
+          if [ -z "$TOKEN" ]; then
             echo "::error::Reconciling needs the LABEL_SYNC_TOKEN secret, which only an org owner can add."
-            echo "::error::Run .github/sync-labels.sh --apply locally instead, or re-run without 'apply'."
+            echo "::error::Re-run without 'apply' to get a drift report instead."
             exit 1
           fi
-          .github/sync-labels.sh --apply
+
+      - name: Sync labels in ${{ matrix.repo }}
+        uses: actions/github-script@v7
+        env:
+          OWNER: codehaus-plexus
+          REPO: ${{ matrix.repo }}
+          APPLY: ${{ inputs.apply }}
+        with:
+          # Reading labels from a public repo needs no permissions, so the
+          # default token is enough for the report-only path.
+          github-token: ${{ secrets.LABEL_SYNC_TOKEN || github.token }}
+          script: |
+            const labels = require('./.github/labels.js');
+            const apply = process.env.APPLY === 'true';
+            const { OWNER: owner, REPO: repo } = process.env;
+
+            const current = await github.paginate(github.rest.issues.listLabelsForRepo, {
+              owner, repo, per_page: 100
+            });
+
+            const drift = [];
+            for (const label of labels) {
+              const existing = current.find(({ name }) => name === label.name);
+
+              if (!existing) {
+                drift.push(`missing: ${label.name}`);
+                if (apply) {
+                  await github.rest.issues.createLabel({ owner, repo, ...label });
+                }
+              } else {
+                const what = [];
+                if (existing.color.toLowerCase() !== label.color.toLowerCase()) {
+                  what.push(`colour #${existing.color} -> #${label.color}`);
+                }
+                if ((existing.description || '') !== label.description) {
+                  what.push('description');
+                }
+                if (what.length) {
+                  drift.push(`${label.name}: ${what.join(', ')}`);
+                  if (apply) {
+                    await github.rest.issues.updateLabel({ owner, repo, ...label });
+                  }
+                }
+              }
+            }
+
+            if (drift.length === 0) {
+              core.info(`${repo}: up to date`);
+              return;
+            }
+            drift.forEach(d => core.info(`${repo}: ${d}`));
+            core.summary.addHeading(repo, 3).addList(drift).write();
+            if (!apply) {
+              core.setFailed(`${repo}: ${drift.length} label(s) drifted from .github/labels.js`);
+            }
