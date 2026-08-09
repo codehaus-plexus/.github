@@ -1,20 +1,22 @@
-# Re-applies .github/labels.tsv to every active repo in the org.
+# Keeps the org's labels matching .github/labels.tsv.
 #
 # This exists because the label set drifted badly once already: `maintenance`
 # ended up defined in 18 repos with 18 different colours, because there was a
-# convention but nothing that enforced it. Fixing the state without fixing the
-# process just resets the clock.
+# convention and nothing enforcing it. Fixing the state without fixing the
+# process only resets the clock.
 #
-# Runs in report-only mode by default: the weekly run prints what has drifted
-# and fails if anything has, so the divergence is visible without anything
-# being changed behind a maintainer's back. Dispatch it manually with
-# apply = true to actually re-apply.
+# The weekly run is REPORT-ONLY and needs no credentials: every plexus repo is
+# public, and reading labels from a public repo requires no permissions at all,
+# so the default GITHUB_TOKEN is enough. It diffs the live labels against
+# labels.tsv and fails if they have drifted. Nothing is ever changed by the
+# schedule.
 #
-# REQUIRES a repository secret named LABEL_SYNC_TOKEN: a fine-grained PAT with
-# read/write on Issues for the codehaus-plexus repos. The default GITHUB_TOKEN
-# is scoped to this repository alone and cannot write labels to the others, so
-# without that secret this workflow can only fail. It is intentionally left to
-# a maintainer with org admin to create.
+# Reconciling (apply: true) does need write access, via an optional
+# LABEL_SYNC_TOKEN secret - a fine-grained PAT owned by the codehaus-plexus org
+# with `Issues: Read and write`. Only an org owner can add that secret. Until
+# one exists, the drift report still works; a maintainer with push rights can
+# reconcile by running `.github/sync-labels.sh --apply` locally, which is how
+# the current state was applied.
 name: Label sync
 
 on:
@@ -23,11 +25,12 @@ on:
   workflow_dispatch:
     inputs:
       apply:
-        description: 'Apply the canonical labels (otherwise report only)'
+        description: 'Reconcile labels (needs LABEL_SYNC_TOKEN). Leave off to only report drift.'
         type: boolean
         default: false
 
-permissions: {}
+permissions:
+  contents: read
 
 jobs:
   sync:
@@ -35,24 +38,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check the token is configured
+      - name: Report drift
+        if: ${{ inputs.apply != true }}
+        env:
+          # Reading labels from public repos needs no permissions.
+          GH_TOKEN: ${{ github.token }}
+        run: .github/sync-labels.sh
+
+      - name: Reconcile
+        if: ${{ inputs.apply == true }}
         env:
           GH_TOKEN: ${{ secrets.LABEL_SYNC_TOKEN }}
         run: |
           if [ -z "$GH_TOKEN" ]; then
-            echo "::error::LABEL_SYNC_TOKEN is not set. See the comment at the top of this workflow."
+            echo "::error::Reconciling needs the LABEL_SYNC_TOKEN secret, which only an org owner can add."
+            echo "::error::Run .github/sync-labels.sh --apply locally instead, or re-run without 'apply'."
             exit 1
           fi
-
-      - name: Sync labels
-        env:
-          GH_TOKEN: ${{ secrets.LABEL_SYNC_TOKEN }}
-        run: |
-          if [ "${{ inputs.apply }}" = "true" ]; then
-            .github/sync-labels.sh --apply
-          else
-            .github/sync-labels.sh | tee drift.log
-            if grep -q '^  DRY:' drift.log; then
-              echo "::warning::Labels have drifted from .github/labels.tsv - see the log above."
-            fi
-          fi
+          .github/sync-labels.sh --apply
