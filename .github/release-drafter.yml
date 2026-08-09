@@ -1,8 +1,12 @@
 # Configuration for Release Drafter: https://github.com/release-drafter/release-drafter
 # Shared by every codehaus-plexus repo via `_extends: .github`.
 #
-# Every label referenced here exists in labels.tsv, and every label in
-# labels.tsv either has a category here or is deliberately excluded.
+# Every label referenced here exists in labels.js. The reverse does not
+# hold and should not: the priority: family, question, help wanted and the
+# other triage labels are deliberately absent, because they describe an
+# issue's handling rather than a change worth listing in release notes.
+# java and github_actions are absent for a different reason - Dependabot
+# always applies dependencies alongside them, and that is categorised.
 # Note that `categories` is an array: a repo that overrides it via _extends
 # replaces the whole array rather than appending to it.
 name-template: $NEXT_PATCH_VERSION
@@ -35,7 +39,7 @@ categories:
 
 exclude-labels:
   - reverted
-  - no-changelog
+  - skip-changelog
 
 # Derive the next version from the labels already being applied.
 version-resolver:
