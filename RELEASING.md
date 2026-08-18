@@ -64,6 +64,20 @@ mvn -Preporting clean verify site site:stage scm-publish:publish-scm
 
 That covers modello, plexus-compiler, plexus-languages and plexus-interactivity.
 
+**plexus-pom is neither**, because it never grew the `scm-publish` execution the other single-module
+projects have. `site-deploy` there publishes nothing at all, silently. Name the content directory instead:
+
+```
+mvn -Preporting clean verify site
+mvn scm-publish:publish-scm -Dscmpublish.content=target/site
+```
+
+Without `scmpublish.content` the plugin looks in `target/staging`, which a single-module build never
+creates. Run it from a checkout of the release tag, so the site reports the version that is on Central
+rather than the next snapshot, and add `-Dscmpublish.dryRun=true` the first time: it prints the additions,
+updates and deletes it would make, and a delete count anywhere near the size of the site means the content
+directory is wrong.
+
 The `-Preporting` profile is what adds the Javadoc, JXR and surefire reports. Without it you publish a site with no API documentation, which is worse than not republishing at all.
 
 Sites are published from a local checkout. There is no workflow for it: publishing puts content live with
