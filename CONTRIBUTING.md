@@ -24,6 +24,11 @@ mvn --batch-mode --errors --show-version verify javadoc:javadoc
 
 across JDK 8, 21 and 25 on Linux, Windows and macOS, using Maven 3.9.11. If your change builds on your machine but you can't easily test the other JDKs, open the pull request anyway and let CI tell you.
 
+Use **Maven 3.9.0 or later**. Releases have required it for some time; from `plexus-pom` 27 the ordinary
+build enforces it as well, so an older Maven fails at `enforce-maven-version` rather than part-way through.
+This is a build-side requirement only — it says nothing about the Maven version that can consume the
+released artifacts.
+
 Some repositories have integration tests behind a profile, usually `-Prun-its`. Check the repository's own README.
 
 ## Java baseline
