@@ -66,18 +66,9 @@ That covers modello, plexus-compiler, plexus-languages and plexus-interactivity.
 
 The `-Preporting` profile is what adds the Javadoc, JXR and surefire reports. Without it you publish a site with no API documentation, which is worse than not republishing at all.
 
-## Publishing from GitHub Actions
-
-Every project has a **Publish Site** workflow, run from the Actions tab. It does the same thing as the commands above, so you do not need a local checkout or credentials:
-
-- **multi-module** — set by the caller workflow, not by you
-- **dry-run** — builds the site and checks out `gh-pages` without committing. Worth using the first time you publish a given project.
-
-The job token pushes to that repository's own `gh-pages`; there is no secret to configure.
-
-### Why it isn't automatic
-
-The workflow is triggered by hand rather than on release. Publishing puts content live with no review step, and Maven site builds break often enough — doxia, site plugin and JDK interactions — that we would rather a person saw the output before it goes up.
+Sites are published from a local checkout. There is no workflow for it: publishing puts content live with
+no review step, and Maven site builds break often enough — doxia, site plugin and JDK interactions — that
+the person doing it should see the output first.
 
 ## Snapshot deployment
 
