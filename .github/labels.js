@@ -25,11 +25,6 @@ module.exports = [
         description: "Pull requests that remove features"
     },
     {
-        name: "deprecated",
-        color: "C70132",
-        description: "Pull requests that deprecate features"
-    },
-    {
         name: "bug",
         color: "d73a4a",
         description: "Something isn't working"
@@ -133,11 +128,6 @@ module.exports = [
     },
 
     // ---- Triage --------------------------------------------------------
-    {
-        name: "duplicate",
-        color: "cfd3d7",
-        description: "This issue or pull request already exists"
-    },
     {
         name: "invalid",
         color: "e4e669",

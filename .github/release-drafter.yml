@@ -18,8 +18,6 @@ categories:
     labels: [breaking]
   - title: 🚨 Removed
     labels: [removed]
-  - title: ⚠️ Deprecated
-    labels: [deprecated]
   - title: 🚀 New features and improvements
     labels: [enhancement]
   - title: 🐛 Bug Fixes
@@ -46,7 +44,7 @@ version-resolver:
   major:
     labels: [breaking]
   minor:
-    labels: [enhancement, removed, deprecated]
+    labels: [enhancement, removed]
   patch:
     labels: [bug, documentation, maintenance, build, dependencies]
   default: patch
