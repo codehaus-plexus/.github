@@ -9,8 +9,18 @@
 # always applies dependencies alongside them, and that is categorised.
 # Note that `categories` is an array: a repo that overrides it via _extends
 # replaces the whole array rather than appending to it.
-name-template: $NEXT_PATCH_VERSION
-tag-template: $NEXT_PATCH_VERSION
+# $RESOLVED_VERSION follows the version-resolver below, so a PR labelled
+# enhancement drafts a minor and a PR labelled bug drafts a patch. The previous
+# $NEXT_PATCH_VERSION always drafted a patch, which meant every minor release in
+# the org had to be retitled by hand before publishing.
+#
+# tag-template here is a fallback with no artifact prefix, and no repo should
+# rely on it: every repo tags as <artifact>-<version>, so each one overrides
+# tag-template and sets tag-prefix to match. Without tag-prefix the drafter
+# parses the version out of the tag string as best it can - plexus-i18n drafted
+# 18.0.1 once, having read the 18 out of its own name.
+name-template: $RESOLVED_VERSION
+tag-template: $RESOLVED_VERSION
 version-template: $MAJOR.$MINOR.$PATCH
 
 categories:
