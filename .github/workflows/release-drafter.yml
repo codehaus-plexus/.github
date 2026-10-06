@@ -5,5 +5,10 @@ on:
 jobs:
   update_release_draft:
     runs-on: ubuntu-latest
+    # The draft release needs contents: write, reading merged pull requests
+    # needs pull-requests: read. Every calling repo grants both by default.
+    permissions:
+      contents: write
+      pull-requests: read
     steps:
       - uses: release-drafter/release-drafter@v7.9.0
