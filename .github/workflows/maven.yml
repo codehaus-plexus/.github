@@ -94,12 +94,72 @@ jobs:
           java-version: ${{ inputs.jdk-fast-fail-build }}
           distribution: ${{ inputs.jdk-distribution-fast-fail-build }}
           cache: 'maven'
+          # only the default branch saves the Maven and JDK caches; other branches and pull requests restore them
+          cache-read-only: ${{ github.ref_name != github.event.repository.default_branch }}
+
+      - name: Check the runner's Maven
+        id: runner-maven
+        shell: bash
+        env:
+          MAVEN_VERSION: ${{ inputs.maven-version }}
+        run: |
+          runner_version="$(mvn --batch-mode --version -q 2>/dev/null | head -n 1 | tr -d '\r')"
+          echo "Runner's Maven: ${runner_version:-none}, requested: $MAVEN_VERSION"
+          if [ "$runner_version" = "$MAVEN_VERSION" ]; then echo "matches=true" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Restore Maven from the cache
+        id: maven-cache
+        if: steps.runner-maven.outputs.matches != 'true'
+        uses: actions/cache/restore@v6
+        with:
+          path: ~/.m2/dists/apache-maven-${{ inputs.maven-version }}
+          key: maven-dist-${{ runner.os }}-${{ inputs.maven-version }}
+
+      - name: Download Maven
+        if: steps.runner-maven.outputs.matches != 'true' && steps.maven-cache.outputs.cache-hit != 'true'
+        shell: bash
+        env:
+          MAVEN_VERSION: ${{ inputs.maven-version }}
+        run: |
+          url="https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/$MAVEN_VERSION/apache-maven-$MAVEN_VERSION-bin.tar.gz"
+          # a Unix-style path: tar in Git Bash on Windows takes "D:" in $RUNNER_TEMP for a remote host
+          mkdir -p ~/.m2/dists
+          archive="$HOME/.m2/dists/apache-maven-$MAVEN_VERSION-bin.tar.gz"
+          curl --fail --silent --show-error --location --retry 5 --retry-all-errors --output "$archive" "$url"
+          # Central has no .sha512 before Maven 3.9.1; fall back to .sha1 there
+          # (--retry without --retry-all-errors: a 404 is final)
+          if expected="$(curl --fail --silent --location --retry 5 "$url.sha512")"; then
+            algorithm=sha512
+          else
+            expected="$(curl --fail --silent --show-error --location --retry 5 --retry-all-errors "$url.sha1")"
+            algorithm=sha1
+          fi
+          expected="$(echo "$expected" | cut -d ' ' -f 1)"
+          actual="$(openssl dgst -$algorithm -r "$archive" | cut -d ' ' -f 1)"
+          [ "$expected" = "$actual" ] || { echo "::error::$algorithm mismatch for $url"; exit 1; }
+          tar -xzf "$archive" -C ~/.m2/dists
+          rm "$archive"
+
+      - name: Save Maven to the cache
+        # only the default branch saves; other branches and pull requests restore its entry
+        if: steps.runner-maven.outputs.matches != 'true' && steps.maven-cache.outputs.cache-hit != 'true' && github.ref_name == github.event.repository.default_branch
+        uses: actions/cache/save@v6
+        with:
+          path: ~/.m2/dists/apache-maven-${{ inputs.maven-version }}
+          key: maven-dist-${{ runner.os }}-${{ inputs.maven-version }}
 
       - name: Set up Maven
-        run: mvn --errors --batch-mode --show-version org.apache.maven.plugins:maven-wrapper-plugin:3.3.2:wrapper "-Dtype=only-script" "-Dmaven=${{ inputs.maven-version }}"
+        if: steps.runner-maven.outputs.matches != 'true'
+        shell: bash
+        env:
+          MAVEN_VERSION: ${{ inputs.maven-version }}
+        run: |
+          bin="$HOME/.m2/dists/apache-maven-$MAVEN_VERSION/bin"
+          if command -v cygpath > /dev/null; then bin="$(cygpath --windows "$bin")"; fi
+          echo "$bin" >> "$GITHUB_PATH"
 
       - name: Build with Maven
-        run: ./mvnw ${{ inputs.maven_args }}
+        run: mvn ${{ inputs.maven_args }}
 
   verify:
     needs: build
@@ -125,10 +185,70 @@ jobs:
           java-version: ${{ matrix.jdk }}
           distribution: ${{ matrix.distribution }}
           cache: 'maven'
+          # only the default branch saves the Maven and JDK caches; other branches and pull requests restore them
+          cache-read-only: ${{ github.ref_name != github.event.repository.default_branch }}
+
+      - name: Check the runner's Maven
+        id: runner-maven
+        shell: bash
+        env:
+          MAVEN_VERSION: ${{ inputs.maven-version }}
+        run: |
+          runner_version="$(mvn --batch-mode --version -q 2>/dev/null | head -n 1 | tr -d '\r')"
+          echo "Runner's Maven: ${runner_version:-none}, requested: $MAVEN_VERSION"
+          if [ "$runner_version" = "$MAVEN_VERSION" ]; then echo "matches=true" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Restore Maven from the cache
+        id: maven-cache
+        if: steps.runner-maven.outputs.matches != 'true'
+        uses: actions/cache/restore@v6
+        with:
+          path: ~/.m2/dists/apache-maven-${{ inputs.maven-version }}
+          key: maven-dist-${{ runner.os }}-${{ inputs.maven-version }}
+
+      - name: Download Maven
+        if: steps.runner-maven.outputs.matches != 'true' && steps.maven-cache.outputs.cache-hit != 'true'
+        shell: bash
+        env:
+          MAVEN_VERSION: ${{ inputs.maven-version }}
+        run: |
+          url="https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/$MAVEN_VERSION/apache-maven-$MAVEN_VERSION-bin.tar.gz"
+          # a Unix-style path: tar in Git Bash on Windows takes "D:" in $RUNNER_TEMP for a remote host
+          mkdir -p ~/.m2/dists
+          archive="$HOME/.m2/dists/apache-maven-$MAVEN_VERSION-bin.tar.gz"
+          curl --fail --silent --show-error --location --retry 5 --retry-all-errors --output "$archive" "$url"
+          # Central has no .sha512 before Maven 3.9.1; fall back to .sha1 there
+          # (--retry without --retry-all-errors: a 404 is final)
+          if expected="$(curl --fail --silent --location --retry 5 "$url.sha512")"; then
+            algorithm=sha512
+          else
+            expected="$(curl --fail --silent --show-error --location --retry 5 --retry-all-errors "$url.sha1")"
+            algorithm=sha1
+          fi
+          expected="$(echo "$expected" | cut -d ' ' -f 1)"
+          actual="$(openssl dgst -$algorithm -r "$archive" | cut -d ' ' -f 1)"
+          [ "$expected" = "$actual" ] || { echo "::error::$algorithm mismatch for $url"; exit 1; }
+          tar -xzf "$archive" -C ~/.m2/dists
+          rm "$archive"
+
+      - name: Save Maven to the cache
+        # only the default branch saves; other branches and pull requests restore its entry
+        if: steps.runner-maven.outputs.matches != 'true' && steps.maven-cache.outputs.cache-hit != 'true' && github.ref_name == github.event.repository.default_branch
+        uses: actions/cache/save@v6
+        with:
+          path: ~/.m2/dists/apache-maven-${{ inputs.maven-version }}
+          key: maven-dist-${{ runner.os }}-${{ inputs.maven-version }}
 
       - name: Set up Maven
-        run: mvn --errors --batch-mode --show-version org.apache.maven.plugins:maven-wrapper-plugin:3.3.2:wrapper "-Dtype=only-script" "-Dmaven=${{ inputs.maven-version }}"
+        if: steps.runner-maven.outputs.matches != 'true'
+        shell: bash
+        env:
+          MAVEN_VERSION: ${{ inputs.maven-version }}
+        run: |
+          bin="$HOME/.m2/dists/apache-maven-$MAVEN_VERSION/bin"
+          if command -v cygpath > /dev/null; then bin="$(cygpath --windows "$bin")"; fi
+          echo "$bin" >> "$GITHUB_PATH"
 
       - name: Build with Maven
-        run: ./mvnw ${{ inputs.maven_args }}
+        run: mvn ${{ inputs.maven_args }}
 
