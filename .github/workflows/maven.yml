@@ -60,9 +60,9 @@ on:
         default: '[ "zulu" ]'
         type: string
       jdk-fast-fail-build:
-        description: 'jdk fast fail build'
+        description: 'jdk fast fail build; 25 rather than the v5 17, since some modules need JDK 21 or later'
         required: false
-        default: '17'
+        default: '25'
         type: string
       jdk-distribution-fast-fail-build:
         description: 'jdk distribution fast fail build'
