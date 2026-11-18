@@ -24,7 +24,7 @@ No profile or local setup is required. CI runs the equivalent of the following:
 mvn --batch-mode --errors --show-version verify javadoc:javadoc
 ```
 
-CI runs that across JDK 8, 21, and 25 on Linux, Windows, and macOS, using Maven 3.9.11. If your change builds on your machine but you can't test the other JDKs, open the pull request anyway and read the CI result.
+CI runs that across JDK 8, 21, and 25 on Linux, Windows, and macOS, using Maven 3.10.0. If your change builds on your machine but you can't test the other JDKs, open the pull request anyway and read the CI result.
 
 Use Maven 3.9.0 or later. Releases have required it for some time, and from `plexus-pom` 27 the ordinary build enforces it as well, so an older Maven fails at `enforce-maven-version` rather than part-way through. This is a build-side requirement only. It says nothing about the Maven version that can consume the released artifacts.
 

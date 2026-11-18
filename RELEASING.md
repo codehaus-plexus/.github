@@ -37,7 +37,7 @@ There is no manual publish step. `maven-release-plugin` is configured in the par
 
 [Njord](https://maveniverse.eu/docs/njord/) is registered as a build extension and configured with `autoPublish=true` and `publishingType=automatic`, so it publishes the deployment to Central itself. `njord.enabled` is `false` outside the release profile, so ordinary builds are unaffected.
 
-Releasing needs Maven **3.9.0** or later — the `plexus-release` profile raises `minimalMavenBuildVersion` above the 3.6.3 required for a normal build.
+Every build, not just a release, needs Maven **3.9.0** or later: the parent POM sets `minimalMavenBuildVersion` to that value and the enforcer rejects older versions. The `plexus-release` profile does not raise the minimum; it only sets `njord.enabled=true`. Releasing additionally needs a Central Portal token and a published GPG key, as described under [One-time setup](#one-time-setup).
 
 Afterwards:
 
