@@ -55,9 +55,9 @@ on:
         default: '[]'
         type: string
       jdk-distribution-matrix:
-        description: 'jdk distribution matrix'
+        description: 'jdk distribution matrix; temurin, which the hosted runners preinstall in the tool cache'
         required: false
-        default: '[ "zulu" ]'
+        default: '[ "temurin" ]'
         type: string
       jdk-fast-fail-build:
         description: 'jdk fast fail build; 25 rather than the v5 17, since some modules need JDK 21 or later'
@@ -67,7 +67,7 @@ on:
       jdk-distribution-fast-fail-build:
         description: 'jdk distribution fast fail build'
         required: false
-        default: 'zulu'
+        default: 'temurin'
         type: string
 
 jobs:
