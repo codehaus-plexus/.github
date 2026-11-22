@@ -71,19 +71,56 @@ on:
         type: string
 
 jobs:
+  matrix:
+    name: Matrix
+    runs-on: ubuntu-latest
+    permissions: {}
+    outputs:
+      exclude: ${{ steps.matrix.outputs.exclude }}
+      include: ${{ steps.matrix.outputs.include }}
+    steps:
+      # The Linux runners have no JDK 8 in the tool cache, and the Temurin 8 download fails now and
+      # then (HTTP 403, checksum mismatch): build JDK 8 on Linux with Zulu. Windows keeps its cached Temurin 8.
+      - id: matrix
+        env:
+          OS_MATRIX: ${{ inputs.os-matrix }}
+          JDK_MATRIX: ${{ inputs.jdk-matrix }}
+          DISTRIBUTION_MATRIX: ${{ inputs.jdk-distribution-matrix }}
+          MATRIX_EXCLUDE: ${{ inputs.matrix-exclude }}
+          MATRIX_INCLUDE: ${{ inputs.matrix-include }}
+        run: |
+          jq -cn --argjson oses "$OS_MATRIX" --argjson jdks "$JDK_MATRIX" --argjson dists "$DISTRIBUTION_MATRIX" \
+            --argjson exclude "$MATRIX_EXCLUDE" --argjson include "$MATRIX_INCLUDE" '
+            ([$oses[] | select(startswith("ubuntu"))][0]) as $os
+            | ([$jdks[] | select(tostring == "8")][0]) as $jdk
+            | if $os == null or $jdk == null or ($dists | index("temurin")) == null
+                 or any($exclude[]; (keys - ["os", "jdk", "distribution"] | length) == 0
+                        and (.os // $os) == $os and ((.jdk // $jdk) | tostring) == "8"
+                        and (.distribution // "temurin") == "temurin")
+              then {exclude: $exclude, include: $include}
+              else {exclude: ($exclude + [{os: $os, jdk: $jdk, distribution: "temurin"}]),
+                    include: ($include + [{os: $os, jdk: $jdk, distribution: "zulu"}])}
+              end
+            | "exclude=\(.exclude | tojson)\ninclude=\(.include | tojson)"' -r | tee -a "$GITHUB_OUTPUT"
+
   build:
     name: Verify
+    needs: matrix
     uses: apache/maven-gh-actions-shared/.github/workflows/maven-verify.yml@v5
     with:
       os-matrix: ${{ inputs.os-matrix }}
       jdk-matrix: ${{ inputs.jdk-matrix }}
-      matrix-exclude: ${{ inputs.matrix-exclude }}
-      matrix-include: ${{ inputs.matrix-include }}
+      matrix-exclude: ${{ needs.matrix.outputs.exclude }}
+      matrix-include: ${{ needs.matrix.outputs.include }}
       jdk-distribution-matrix: ${{ inputs.jdk-distribution-matrix }}
       maven-matrix: ${{ format('["{0}"]', inputs.maven-version) }}
       ff-maven: ${{ inputs.maven-version }}
       ff-jdk: ${{ inputs.jdk-fast-fail-build }}
       ff-jdk-distribution: ${{ inputs.jdk-distribution-fast-fail-build }}
+      # no extra toolchain JDKs: each job registers only its own JDK in toolchains.xml, so macOS, which
+      # caches no JDK, downloads one instead of five
+      jdk-toolchain: ''
+      ff-jdk-toolchain: ''
       ff-goal: ${{ inputs.maven_args }}
       verify-goal: ${{ inputs.maven_args }}
       # site publishing is manual (RELEASING.md), so CI does not build the site
